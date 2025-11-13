@@ -22,6 +22,14 @@ const (
 	FormatConsole FormatType = "console"
 )
 
+// RotationMode defines how log files should be rotated
+type RotationMode string
+
+const (
+	RotationSize  RotationMode = "size"  // Size-based rotation using lumberjack
+	RotationDaily RotationMode = "daily" // Daily rotation based on date
+)
+
 // Config holds the configuration for creating a logger
 type Config struct {
 	// Level is the minimum log level to output
@@ -45,17 +53,21 @@ type Config struct {
 	// AddCaller includes caller information (file and line number)
 	AddCaller bool
 
+	// RotationMode specifies the rotation strategy: "size" or "daily"
+	// Only used when Output is "file"
+	RotationMode RotationMode
+
 	// File rotation settings (used when Output is "file")
-	// MaxSize is the maximum size in megabytes before rotation
+	// MaxSize is the maximum size in megabytes before rotation (for size-based rotation)
 	MaxSize int
 
-	// MaxBackups is the maximum number of old log files to retain
+	// MaxBackups is the maximum number of old log files to retain (for size-based rotation)
 	MaxBackups int
 
 	// MaxAge is the maximum number of days to retain old log files
 	MaxAge int
 
-	// Compress determines if rotated files should be compressed
+	// Compress determines if rotated files should be compressed (for size-based rotation)
 	Compress bool
 
 	// MultiOutput enables writing to both console and file
@@ -63,19 +75,22 @@ type Config struct {
 }
 
 // DefaultConfig returns a configuration with sensible defaults
+// Logs to daily rotating files in ./logs/ with colors enabled
 func DefaultConfig() Config {
 	return Config{
-		Level:       InfoLevel,
-		Format:      FormatJSON,
-		Output:      OutputStdout,
-		UseColor:    isTerminal(),
-		ColorConfig: DefaultColorConfig(),
-		AddCaller:   true,
-		MaxSize:     100,  // 100 MB
-		MaxBackups:  3,    // Keep 3 old files
-		MaxAge:      28,   // Keep for 28 days
-		Compress:    true, // Compress old files
-		MultiOutput: false,
+		Level:        InfoLevel,
+		Format:       FormatConsole,
+		Output:       OutputFile,
+		OutputPath:   "./logs/app.log",
+		UseColor:     true,
+		ColorConfig:  DefaultColorConfig(),
+		AddCaller:    true,
+		RotationMode: RotationDaily, // Daily rotation by default
+		MaxSize:      100,            // 100 MB (for size-based rotation)
+		MaxBackups:   3,              // Keep 3 old files (for size-based rotation)
+		MaxAge:       28,             // Keep for 28 days
+		Compress:     true,           // Compress old files (for size-based rotation)
+		MultiOutput:  false,
 	}
 }
 

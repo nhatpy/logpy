@@ -20,15 +20,51 @@ func NewWithConfig(cfg Config) *Logger {
 
 	switch cfg.Output {
 	case OutputFile:
-		// File output with rotation
-		handler = NewFileHandler(
-			cfg.OutputPath,
-			cfg.Level,
-			cfg.MaxSize,
-			cfg.MaxBackups,
-			cfg.MaxAge,
-			cfg.Compress,
-		)
+		// Check rotation mode
+		if cfg.RotationMode == RotationDaily {
+			// Daily rotation based on date
+			baseDir := "./logs"
+			filePrefix := "app"
+
+			// Extract directory and filename from OutputPath
+			if cfg.OutputPath != "" {
+				baseDir = cfg.OutputPath
+				// If OutputPath includes a filename, use it as prefix
+				if len(cfg.OutputPath) > 4 && cfg.OutputPath[len(cfg.OutputPath)-4:] == ".log" {
+					// Extract directory and file prefix
+					dir, file := splitPath(cfg.OutputPath)
+					baseDir = dir
+					// Remove .log extension to get prefix
+					filePrefix = file[:len(file)-4]
+				}
+			}
+
+			// Create daily file handler
+			dailyHandler, err := NewDailyFileHandler(
+				baseDir,
+				filePrefix,
+				cfg.Level,
+				cfg.MaxAge,
+				cfg.UseColor,
+				cfg.ColorConfig,
+			)
+			if err != nil {
+				// Fallback to console handler on error
+				handler = createConsoleHandler(cfg)
+			} else {
+				handler = dailyHandler
+			}
+		} else {
+			// Size-based rotation using lumberjack
+			handler = NewFileHandler(
+				cfg.OutputPath,
+				cfg.Level,
+				cfg.MaxSize,
+				cfg.MaxBackups,
+				cfg.MaxAge,
+				cfg.Compress,
+			)
+		}
 
 		// If multi-output is enabled, also log to console
 		if cfg.MultiOutput {
@@ -53,6 +89,16 @@ func NewWithConfig(cfg Config) *Logger {
 		handler: handler,
 		fields:  make([]Field, 0),
 	}
+}
+
+// splitPath splits a file path into directory and filename
+func splitPath(path string) (dir, file string) {
+	for i := len(path) - 1; i >= 0; i-- {
+		if path[i] == '/' {
+			return path[:i], path[i+1:]
+		}
+	}
+	return ".", path
 }
 
 // createConsoleHandler is a helper to create a console handler from config

@@ -8,10 +8,14 @@ import (
 )
 
 func main() {
-	// Example 1: Using the default logger (JSON format to stdout)
-	println("=== Example 1: Default Logger ===")
+	// Example 1: Using the default logger (Daily rotation to file with colors)
+	println("=== Example 1: Default Logger (Daily Rotation with Colors) ===")
 	defaultLogger := logpy.Default()
 	defaultLogger.Info().Str("user", "john").Int("age", 30).Msg("User logged in")
+	defaultLogger.Debug().Str("action", "login").Msg("Debug message")
+	defaultLogger.Warn().Str("warning", "test").Msg("Warning message")
+	defaultLogger.Error().Str("error", "test").Msg("Error message")
+	println("Check ./logs/app-YYYY-MM-DD.log for colored output in file!")
 
 	// Example 2: Development logger with colors
 	println("\n=== Example 2: Development Logger (Colored Console) ===")
