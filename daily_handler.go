@@ -69,10 +69,8 @@ func NewDailyFileHandler(baseDir, filePrefix string, level Level, maxDaysToKeep 
 		},
 	}
 
-	// Open the initial file for today
-	if err := h.rotateIfNeeded(); err != nil {
-		return nil, err
-	}
+	// Don't create file immediately - wait for first write (lazy initialization)
+	// This prevents empty files from being created
 
 	// Set the writer to self (we implement io.Writer)
 	h.baseHandler.writer = h

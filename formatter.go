@@ -71,9 +71,18 @@ func (f *JSONFormatter) Format(entry Entry) ([]byte, error) {
 		m["caller"] = fmt.Sprintf("%s:%d", entry.Caller.File, entry.Caller.Line)
 	}
 
-	// Add fields
+	// Add event-specific fields
 	for _, field := range entry.Fields {
 		m[field.Key] = field.Value
+	}
+
+	// Add context fields under "context" key
+	if len(entry.ContextFields) > 0 {
+		contextData := make(map[string]interface{})
+		for _, field := range entry.ContextFields {
+			contextData[field.Key] = field.Value
+		}
+		m["context"] = contextData
 	}
 
 	// Marshal to JSON
@@ -138,9 +147,17 @@ func (f *ConsoleFormatter) Format(entry Entry) ([]byte, error) {
 		output += " " + entry.Message
 	}
 
-	// Add fields
+	// Add event-specific fields first
 	if len(entry.Fields) > 0 {
 		for _, field := range entry.Fields {
+			output += fmt.Sprintf(" %s=%v", field.Key, field.Value)
+		}
+	}
+
+	// Add context fields (separated with | symbol)
+	if len(entry.ContextFields) > 0 {
+		output += " |"
+		for _, field := range entry.ContextFields {
 			output += fmt.Sprintf(" %s=%v", field.Key, field.Value)
 		}
 	}

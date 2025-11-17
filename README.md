@@ -1,17 +1,18 @@
 # logpy - A Flexible and Feature-Rich Go Logging Library
 
-`logpy` is a high-performance, structured logging library for Go, inspired by the best features of Zerolog, Zap, and Slog. It provides a clean fluent API, customizable output formats, and built-in file rotation support.
+`logpy` is a high-performance, structured logging library for Go, inspired by the best features of Zerolog, Zap, and Slog. It provides a clean fluent API, customizable output formats, and built-in daily file rotation support.
 
 ## Features
 
-- **Log by Level**: Support for Debug, Info, Warn, and Error levels with filtering
-- **Customizable Colors**: Full control over log level colors in console output
-- **Detailed Context**: Automatic timestamp and caller information (file and line number)
-- **Structured Logging**: Easy-to-use fluent API for adding typed fields
-- **File Rotation**: Built-in support for size-based and time-based log rotation
-- **Flexible Configuration**: Sensible defaults with full customization options
-- **Multiple Outputs**: Log to console and file simultaneously
-- **Zero Dependencies**: Only requires `lumberjack` for file rotation (optional)
+- **🎯 Log by Level**: Support for Debug, Info, Warn, and Error levels with filtering
+- **🎨 Customizable Colors**: Full control over log level colors in console output
+- **📅 Daily Log Rotation**: Automatic daily rotation with date-based filenames (e.g., `2025-11-17.log`)
+- **📊 Structured Logging**: Easy-to-use fluent API for adding typed fields
+- **🔄 Dual Output**: Log to console AND file simultaneously (default behavior)
+- **📁 File Rotation**: Both daily rotation and size-based rotation supported
+- **⚙️ Flexible Configuration**: Sensible defaults with full customization options
+- **🚀 Zero Allocation**: Minimal allocations in hot paths for performance
+- **📦 Minimal Dependencies**: Only requires `lumberjack` for size-based rotation
 
 ## Installation
 
@@ -27,14 +28,27 @@ package main
 import "github.com/nhatdo/logpy"
 
 func main() {
-    // Use the default logger (JSON output to stdout)
+    // Use the default logger (console + file with daily rotation)
     logger := logpy.Default()
     logger.Info().Str("user", "john").Int("age", 30).Msg("User logged in")
 
-    // Or use the development logger (colored console output)
-    devLogger := logpy.Development()
-    devLogger.Debug().Str("component", "auth").Msg("Starting authentication")
+    // Console: Colored output
+    // File: ./logs/2025-11-17.log (plain text, no ANSI codes)
 }
+```
+
+## Default Behavior ⭐
+
+The default configuration logs to **BOTH console and file**:
+
+- **Console**: Colored output (cyan timestamp, blue INFO, yellow WARN, red ERROR)
+- **File**: Plain text at `./logs/2025-11-17.log` (no ANSI codes)
+- **Rotation**: Daily (new file each day)
+- **Cleanup**: Auto-delete logs older than 28 days
+
+```go
+logger := logpy.Default()
+logger.Info().Msg("Logs to console AND file automatically!")
 ```
 
 ## Usage Examples
@@ -76,52 +90,60 @@ requestLogger.Info().Msg("Request received")
 requestLogger.Info().Int("status", 200).Msg("Request completed")
 ```
 
-### 4. Custom Configuration
+### 4. Daily File Rotation with Custom Prefix
 
 ```go
 config := logpy.Config{
-    Level:       logpy.InfoLevel,
-    Format:      logpy.FormatConsole,
-    Output:      logpy.OutputStdout,
-    UseColor:    true,
-    AddCaller:   true,
-    ColorConfig: logpy.DefaultColorConfig(),
+    Level:        logpy.InfoLevel,
+    Format:       logpy.FormatConsole,
+    Output:       logpy.OutputFile,
+    OutputPath:   "./logs/myapp.log",   // Creates myapp-2025-11-17.log
+    RotationMode: logpy.RotationDaily,  // Daily rotation
+    UseColor:     false,                // Plain text in file
+    MaxAge:       7,                    // Keep logs for 7 days
+    MultiOutput:  false,                // File only
 }
 
 logger := logpy.NewWithConfig(config)
+logger.Info().Msg("Logs to daily rotating file")
 ```
 
-### 5. File Logging with Rotation
+### 5. Size-Based Rotation (Traditional Lumberjack)
 
 ```go
 config := logpy.Config{
-    Level:       logpy.InfoLevel,
-    Format:      logpy.FormatJSON,
-    Output:      logpy.OutputFile,
-    OutputPath:  "/var/log/myapp/app.log",
-    MaxSize:     100,  // 100 MB per file
-    MaxBackups:  3,    // Keep 3 old files
-    MaxAge:      28,   // Keep logs for 28 days
-    Compress:    true, // Compress rotated files
+    Level:        logpy.InfoLevel,
+    Format:       logpy.FormatJSON,
+    Output:       logpy.OutputFile,
+    OutputPath:   "/var/log/myapp/app.log",
+    RotationMode: logpy.RotationSize,  // Size-based rotation
+    MaxSize:      100,  // 100 MB per file
+    MaxBackups:   3,    // Keep 3 old files
+    MaxAge:       28,   // Keep logs for 28 days
+    Compress:     true, // Compress rotated files
 }
 
 logger := logpy.NewWithConfig(config)
-logger.Info().Msg("This will be written to a rotating file")
+logger.Info().Msg("Logs to size-rotated file")
 ```
 
 ### 6. Multi-Output (Console + File)
 
 ```go
 config := logpy.Config{
-    Level:       logpy.InfoLevel,
-    Format:      logpy.FormatJSON,
-    Output:      logpy.OutputFile,
-    OutputPath:  "/var/log/app.log",
-    MultiOutput: true, // Enable both console and file output
+    Level:        logpy.InfoLevel,
+    Format:       logpy.FormatConsole,
+    Output:       logpy.OutputFile,
+    OutputPath:   "./logs",
+    RotationMode: logpy.RotationDaily,
+    UseColor:     true,
+    MultiOutput:  true, // Enable both console and file output
 }
 
 logger := logpy.NewWithConfig(config)
 logger.Info().Msg("This appears in both console and file")
+// Console: With colors
+// File: Plain text (no ANSI codes)
 ```
 
 ### 7. Custom Colors
@@ -176,36 +198,76 @@ logger.Info().
 
 ```go
 type Config struct {
-    Level       Level      // Minimum log level (DebugLevel, InfoLevel, WarnLevel, ErrorLevel)
-    Format      FormatType // Output format (FormatJSON, FormatConsole)
-    Output      OutputType // Output destination (OutputStdout, OutputStderr, OutputFile)
-    OutputPath  string     // File path (when Output is OutputFile)
-    UseColor    bool       // Enable colored output (console format only)
-    ColorConfig ColorConfig // Custom color configuration
-    AddCaller   bool       // Include caller information (file:line)
+    Level       Level         // Minimum log level (DebugLevel, InfoLevel, WarnLevel, ErrorLevel)
+    Format      FormatType    // Output format (FormatJSON, FormatConsole)
+    Output      OutputType    // Output destination (OutputStdout, OutputStderr, OutputFile)
+    OutputPath  string        // File path or directory (when Output is OutputFile)
+    UseColor    bool          // Enable colored output (console format only)
+    ColorConfig ColorConfig   // Custom color configuration
+    AddCaller   bool          // Include caller information (file:line)
 
-    // File rotation settings (when Output is OutputFile)
-    MaxSize     int  // Maximum size in MB before rotation
-    MaxBackups  int  // Maximum number of old files to retain
-    MaxAge      int  // Maximum number of days to retain old files
-    Compress    bool // Compress rotated files with gzip
+    // Rotation settings
+    RotationMode RotationMode // "daily" or "size" rotation strategy
+    MaxSize      int          // Maximum size in MB before rotation (size-based)
+    MaxBackups   int          // Maximum number of old files to retain (size-based)
+    MaxAge       int          // Maximum days to retain old files
+    Compress     bool         // Compress rotated files with gzip (size-based)
 
-    MultiOutput bool // Log to both console and file
+    MultiOutput  bool         // Log to both console and file
 }
 ```
 
 ### Preset Configurations
 
 ```go
-// Default: JSON output to stdout, Info level
+// Default: Console + File (daily rotation), Info level
 logger := logpy.Default()
+// - Console: Colored output
+// - File: ./logs/2025-11-17.log (plain text)
+// - Daily rotation
 
 // Development: Colored console output, Debug level
 logger := logpy.Development()
+// - Console only
+// - All log levels (including Debug)
+// - Colors enabled
 
-// Production: JSON file output with rotation, Info level
+// Production: JSON file output with size rotation, Info level
 logger := logpy.Production()
+// - File: /var/log/app.log
+// - JSON format
+// - Size-based rotation
 ```
+
+## File Naming
+
+### Daily Rotation
+
+```go
+// Simple (no prefix)
+OutputPath: "./logs"
+// Creates: ./logs/2025-11-17.log
+
+// With prefix
+OutputPath: "./logs/myapp.log"
+// Creates: ./logs/myapp-2025-11-17.log
+```
+
+### Size-Based Rotation
+
+```go
+OutputPath: "/var/log/app.log"
+// Creates: /var/log/app.log
+// Rotated: /var/log/app.log.1, /var/log/app.log.2, etc.
+```
+
+## Color Behavior
+
+| MultiOutput | Console | File | Use Case |
+|-------------|---------|------|----------|
+| `true` (default) | ✅ Colors | ❌ Plain text | Best for development/production |
+| `false` + `UseColor=true` | ❌ | ✅ Colors | Terminal viewing of files |
+| `false` + `UseColor=false` | ❌ | ❌ Plain text | Log aggregation systems |
 
 ## API Reference
 
@@ -254,11 +316,11 @@ Logger (Frontend)
     ↓
 Handler Interface (Backend)
     ↓
-ConsoleHandler / JSONHandler / FileHandler / MultiHandler
+ConsoleHandler / JSONHandler / DailyFileHandler / FileHandler / MultiHandler
     ↓
 Formatter (JSON / Console)
     ↓
-Writer (stdout / stderr / file with rotation)
+Writer (stdout / stderr / daily rotating file / size rotating file)
 ```
 
 This design provides:
@@ -274,6 +336,7 @@ This design provides:
 - Early level filtering (disabled events are no-ops)
 - Efficient field builders
 - Optional caller detection
+- Thread-safe file rotation
 
 ## Comparison with Other Libraries
 
@@ -282,7 +345,8 @@ This design provides:
 | Fluent API | ✅ | ✅ | ❌ | ❌ |
 | Typed Fields | ✅ | ✅ | ✅ | ✅ |
 | Colors | ✅ (customizable) | ✅ (limited) | ✅ | ❌ (custom) |
-| File Rotation | ✅ (built-in) | ❌ (external) | ❌ (external) | ❌ (external) |
+| Daily Rotation | ✅ (built-in) | ❌ (external) | ❌ (external) | ❌ (external) |
+| Multi-Output | ✅ (default) | ❌ (manual) | ❌ (manual) | ❌ (manual) |
 | Dependencies | 1 (lumberjack) | 0 | 1 | 0 (stdlib) |
 | Configuration | ✅ (struct-based) | Manual | Manual | Manual |
 
@@ -294,10 +358,37 @@ This design provides:
 4. **Use production config** in production for structured JSON logs
 5. **Set appropriate log levels** to control output verbosity
 6. **Enable caller info** during development, consider disabling in production for performance
+7. **Use daily rotation** for easier log management and analysis
+8. **Keep MultiOutput enabled** (default) for best visibility during development
+
+## Viewing Logs
+
+```bash
+# View plain text log
+cat ./logs/2025-11-17.log
+
+# Follow logs in real-time
+tail -f ./logs/2025-11-17.log
+
+# View logs with colors (if file has ANSI codes)
+less -R ./logs/myapp-2025-11-17.log
+
+# Search logs
+grep "ERROR" ./logs/2025-11-17.log
+
+# View specific date
+cat ./logs/2025-11-16.log
+```
 
 ## Example
 
 See the [example](./example/main.go) directory for a complete working example demonstrating all features.
+
+Run it:
+```bash
+cd example
+go run main.go
+```
 
 ## Contributing
 
@@ -314,3 +405,15 @@ MIT License
 - [Zap](https://github.com/uber-go/zap) - Strongly-typed fields and performance focus
 - [Slog](https://pkg.go.dev/log/slog) - Handler-based architecture and standard library approach
 - [Lumberjack](https://github.com/natefinch/lumberjack) - File rotation implementation
+
+## Changelog
+
+### v1.1.0 (Latest)
+- ✨ Added daily log rotation with date-based filenames
+- ✨ Multi-output (console + file) as default behavior
+- ✨ Smart color handling: colors in console, plain text in files
+- 🎨 Improved default configuration for better developer experience
+- 📝 Comprehensive examples and documentation
+
+### v1.0.0
+- Initial release with basic logging features

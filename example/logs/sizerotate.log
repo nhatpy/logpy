@@ -1,0 +1,2 @@
+{"caller":"main.go:90","format":"json","level":"INFO","max_size_mb":10,"message":"Using lumberjack rotation","mode":"size-based","timestamp":"2025-11-17T11:28:47.161+07:00"}
+{"caller":"main.go:90","format":"json","level":"INFO","max_size_mb":10,"message":"Using lumberjack rotation","mode":"size-based","timestamp":"2025-11-17T11:31:30.954+07:00"}

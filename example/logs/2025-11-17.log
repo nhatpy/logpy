@@ -1,0 +1,6 @@
+[2025-11-17 11:28:47] INFO  main.go:19 User logged in user=john age=30
+[2025-11-17 11:28:47] WARN  main.go:20 Memory usage warning warning=high_memory usage_mb=512
+[2025-11-17 11:28:47] ERROR main.go:21 Connection failed error=database
+[2025-11-17 11:31:30] INFO  main.go:19 User logged in user=john age=30
+[2025-11-17 11:31:30] WARN  main.go:20 Memory usage warning warning=high_memory usage_mb=512
+[2025-11-17 11:31:30] ERROR main.go:21 Connection failed error=database

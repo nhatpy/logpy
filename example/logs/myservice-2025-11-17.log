@@ -1,0 +1,2 @@
+[2025-11-17 11:28:47] INFO  main.go:63 Server started service=api-gateway port=8080 tls_enabled=true startup_time=2s
+[2025-11-17 11:31:30] INFO  main.go:63 Server started service=api-gateway port=8080 tls_enabled=true startup_time=2s

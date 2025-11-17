@@ -4,11 +4,12 @@ import "time"
 
 // Entry represents a complete log entry
 type Entry struct {
-	Time    time.Time
-	Level   Level
-	Message string
-	Fields  []Field
-	Caller  CallerInfo
+	Time          time.Time
+	Level         Level
+	Message       string
+	Fields        []Field // Event-specific fields
+	ContextFields []Field // Persistent context fields (from With())
+	Caller        CallerInfo
 }
 
 // Event is a fluent API builder for creating log entries
@@ -129,17 +130,13 @@ func (e *Event) Msg(msg string) {
 		return
 	}
 
-	// Combine logger's persistent fields with event fields
-	allFields := make([]Field, 0, len(e.logger.fields)+len(e.fields))
-	allFields = append(allFields, e.logger.fields...)
-	allFields = append(allFields, e.fields...)
-
 	entry := Entry{
-		Time:    e.timestamp,
-		Level:   e.level,
-		Message: msg,
-		Fields:  allFields,
-		Caller:  getCaller(2), // Skip: getCaller -> Msg -> actual caller
+		Time:          e.timestamp,
+		Level:         e.level,
+		Message:       msg,
+		Fields:        e.fields,        // Event-specific fields
+		ContextFields: e.logger.fields, // Context fields from With()
+		Caller:        getCaller(2),    // Skip: getCaller -> Msg -> actual caller
 	}
 
 	// Handle the entry
