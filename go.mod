@@ -1,4 +1,4 @@
-module nhatpy/logpy
+module github.com/nhatpy/logpy
 
 go 1.25.0
 
