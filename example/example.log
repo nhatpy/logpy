@@ -1,2 +1,0 @@
-{"caller":"main.go:126","feature":"multi-output","level":"INFO","message":"This message appears in both console and file!","timestamp":"2025-11-04T17:26:04.366+07:00"}
-{"caller":"main.go:130","feature":"multi-output","level":"INFO","message":"This message appears in both console and file!","timestamp":"2025-11-07T11:09:33.920+07:00"}
