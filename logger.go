@@ -24,28 +24,34 @@ func NewWithConfig(cfg Config) *Logger {
 		if cfg.RotationMode == RotationDaily {
 			// Daily rotation based on date
 			baseDir := "./logs"
-			filePrefix := "app"
+			filePrefix := "" // No prefix by default (just date.log)
 
-			// Extract directory and filename from OutputPath
+			// Extract directory and optional prefix from OutputPath
 			if cfg.OutputPath != "" {
-				baseDir = cfg.OutputPath
-				// If OutputPath includes a filename, use it as prefix
+				// If OutputPath ends with .log, it has a prefix
 				if len(cfg.OutputPath) > 4 && cfg.OutputPath[len(cfg.OutputPath)-4:] == ".log" {
 					// Extract directory and file prefix
 					dir, file := splitPath(cfg.OutputPath)
 					baseDir = dir
 					// Remove .log extension to get prefix
 					filePrefix = file[:len(file)-4]
+				} else {
+					// Just a directory path, no prefix
+					baseDir = cfg.OutputPath
+					filePrefix = "" // No prefix, just YYYY-MM-DD.log
 				}
 			}
 
 			// Create daily file handler
+			// File should have no colors if MultiOutput is enabled (colors go to console)
+			// Otherwise, use the configured UseColor setting
+			fileUseColor := cfg.UseColor && !cfg.MultiOutput
 			dailyHandler, err := NewDailyFileHandler(
 				baseDir,
 				filePrefix,
 				cfg.Level,
 				cfg.MaxAge,
-				cfg.UseColor,
+				fileUseColor,
 				cfg.ColorConfig,
 			)
 			if err != nil {
@@ -68,7 +74,8 @@ func NewWithConfig(cfg Config) *Logger {
 
 		// If multi-output is enabled, also log to console
 		if cfg.MultiOutput {
-			consoleHandler := createConsoleHandler(cfg)
+			// Console handler with colors enabled
+			consoleHandler := NewConsoleHandlerWithConfig(cfg.Level, true, cfg.ColorConfig)
 			handler = NewMultiHandler(handler, consoleHandler)
 		}
 

@@ -75,22 +75,22 @@ type Config struct {
 }
 
 // DefaultConfig returns a configuration with sensible defaults
-// Logs to daily rotating files in ./logs/ with colors enabled
+// Logs to BOTH console (with colors) and daily rotating files (with colors)
 func DefaultConfig() Config {
 	return Config{
 		Level:        InfoLevel,
 		Format:       FormatConsole,
 		Output:       OutputFile,
-		OutputPath:   "./logs/app.log",
-		UseColor:     true,
+		OutputPath:   "./logs",       // Just directory, no prefix
+		UseColor:     true,            // Colors in both console and file
 		ColorConfig:  DefaultColorConfig(),
 		AddCaller:    true,
-		RotationMode: RotationDaily, // Daily rotation by default
-		MaxSize:      100,            // 100 MB (for size-based rotation)
-		MaxBackups:   3,              // Keep 3 old files (for size-based rotation)
-		MaxAge:       28,             // Keep for 28 days
-		Compress:     true,           // Compress old files (for size-based rotation)
-		MultiOutput:  false,
+		RotationMode: RotationDaily,  // Daily rotation by default
+		MaxSize:      100,             // 100 MB (for size-based rotation)
+		MaxBackups:   3,               // Keep 3 old files (for size-based rotation)
+		MaxAge:       28,              // Keep for 28 days
+		Compress:     true,            // Compress old files (for size-based rotation)
+		MultiOutput:  true,            // Log to BOTH console and file
 	}
 }
 
