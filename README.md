@@ -17,7 +17,7 @@
 ## Installation
 
 ```bash
-go get github.com/nhatdo/logpy
+go get github.com/nhatpy/logpy
 ```
 
 ## Quick Start
